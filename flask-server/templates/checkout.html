@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <!-- Include Stripe.js library -->
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <!-- Display cart items and total -->
+    <div>Subtotal: <span id="subtotal"><strong>$0.00</strong></span></div>
+    <div>Total: <span id="total">$0.00</span></div>
+
+    <!-- Checkout button -->
+    <button id="checkoutButton">Checkout</button>
+
+    <!-- Include your client-side JavaScript code for payment -->
+    <script>
+        const stripePublicKey = 'pk_test_51OnhGXSHX5mJdelNr31qbyTXdkrvxQMYAvPI3xBYFg1RFaDjqRd5glKPPQTfe8k6sehJMZIN1vFezW4QrbGwy5Hv00SJYCpiIT';
+        const stripe = Stripe(stripePublicKey);
+
+        const checkout = async () => {
+            try {
+                let response = await fetch('/create-payment-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        items: YOUR_ITEMS_DATA,  // Replace with your cart items data
+                        total: YOUR_TOTAL_AMOUNT  // Replace with your total amount
+                    })
+                });
+
+                let data = await response.json();
+
+                const { error } = await stripe.confirmCardPayment(data.client_secret, {
+                    payment_method: {
+                        card: elements.getElement(cardElement), // cardElement is your card input element
+                        billing_details: {
+                            name: 'Customer Name'
+                        }
+                    }
+                });
+
+                if (error) {
+                    console.error('Payment failed:', error);
+                    // Handle payment failure
+                } else {
+                    console.log('Payment successful');
+                    // Handle payment success (e.g., redirect to a thank you page)
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+
+        document.getElementById('checkoutButton').addEventListener('click', checkout);
+    </script>
+</body>
+</html>

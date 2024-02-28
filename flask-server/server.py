@@ -1,6 +1,39 @@
 from flask import Flask, render_template, request,jsonify, json
 import re
 import pandas as pd
+import stripe
+
+
+
+app = Flask(__name__)
+
+# Set your Stripe API keys
+stripe.api_key = 'sk_test_51OnhGXSHX5mJdelNQPvIb8AGPAD3gJyAde9K04NyrumSNfDCLdsMNOQsl2iSsPMzzY13rXwLqdBFIfii1KXVFWLd00tcwncq64'
+
+# Define a route to render your checkout page
+@app.route('/checkout')
+def checkout():
+    return render_template('checkout.html')
+
+# Define a route to create a payment intent
+@app.route('/create-payment-intent', methods=['POST'])
+def create_payment_intent():
+    try:
+        data = request.get_json()
+        items = data['items']
+        total = data['total']
+
+        # Create a payment intent with Stripe
+        payment_intent = stripe.PaymentIntent.create(
+            amount=int(total * 100),  # Amount in cents
+            currency='usd',
+            metadata={'integration_check': 'accept_a_payment'}
+        )
+
+        return jsonify({'client_secret': payment_intent.client_secret}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
