@@ -169,7 +169,7 @@
 
                 <div class="row">
                   <div class="col-md-12">
-                    <button class="btn btn-primary btn-lg py-3 btn-block" onclick="window.location='thankyou.html'; handleclick()">Proceed To Payment</button>
+                    <a href="#" id="buy_now_btn" class="btn btn-primary">Buy Now</a>
                   </div>
                 </div>
               </div>
@@ -191,6 +191,54 @@
   <script src="../static/js/aos.js"></script>
     <script src="../static/main.js"></script>
 
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="../static/script-ajax.js"></script>
+    
+    
+      <script>
+        const checkout_public_key = '{{checkout_public_key}}';
+        const checkout_session_id = '{{checkout_session_id}}';
+      </script>
+      
+      <script>
+        const button = document.querySelector('#buy_now_btn');
+
+        button.addEventListener('click', event => {
+           fetch('/stripe_pay')
+           .then((result) => { return result.json(); })
+           .then((data) => {
+            var stripe = Stripe(data.checkout_public_key);
+            stripe.redirectToCheckout({
+            // Make the id field from the Checkout Session creation API response
+            // available to this file, so you can provide it as parameter here
+            // instead of the {{CHECKOUT_SESSION_ID}} placeholder.
+            sessionId: data.checkout_session_id
+           }).then(function (result) {
+            // If `redirectToCheckout` fails due to a browser or network
+            // error, display the localized error message to your customer
+            // using `result.error.message`.
+              });
+             })
+         });
+      </script>
+       <script>
+                        var stripe = Stripe(checkout_public_key);
+
+              const button = document.querySelector('#buy_now_btn');
+
+              button.addEventListener('click', event => {
+                  stripe.redirectToCheckout({
+                      // Make the id field from the Checkout Session creation API response
+                      // available to this file, so you can provide it as parameter here
+                      // instead of the {{CHECKOUT_SESSION_ID}} placeholder.
+                      sessionId: checkout_session_id
+                  }).then(function (result) {
+                      // If `redirectToCheckout` fails due to a browser or network
+                      // error, display the localized error message to your customer
+                      // using `result.error.message`.
+                  });
+              })
+        </script>
   <script src="../static/js/main.js"></script>
 <script>
 

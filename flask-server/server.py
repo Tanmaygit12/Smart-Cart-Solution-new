@@ -1,39 +1,94 @@
-from flask import Flask, render_template, request,jsonify, json
+from flask import Flask, render_template,url_for, request,abort,jsonify, json
 import re
 import pandas as pd
 import stripe
 
 
-
 app = Flask(__name__)
 
-# Set your Stripe API keys
-stripe.api_key = 'sk_test_51OnhGXSHX5mJdelNQPvIb8AGPAD3gJyAde9K04NyrumSNfDCLdsMNOQsl2iSsPMzzY13rXwLqdBFIfii1KXVFWLd00tcwncq64'
+app.config['STRIPE_PUBLIC_KEY'] = 'pk_test_51OnhGXSHX5mJdelNr31qbyTXdkrvxQMYAvPI3xBYFg1RFaDjqRd5glKPPQTfe8k6sehJMZIN1vFezW4QrbGwy5Hv00SJYCpiIT'
+app.config['STRIPE_SECRET_KEY'] = 'sk_test_51OnhGXSHX5mJdelNQPvIb8AGPAD3gJyAde9K04NyrumSNfDCLdsMNOQsl2iSsPMzzY13rXwLqdBFIfii1KXVFWLd00tcwncq64'
 
-# Define a route to render your checkout page
-@app.route('/checkout')
-def checkout():
-    return render_template('checkout.html')
+stripe.api_key = app.config['STRIPE_SECRET_KEY']
 
-# Define a route to create a payment intent
-@app.route('/create-payment-intent', methods=['POST'])
-def create_payment_intent():
+
+@app.route('/')
+def index():
+    '''
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price': 'price_1GtKWtIdX0gthvYPm4fJgrOr',
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url=url_for('thanks', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url=url_for('index', _external=True),
+    )
+    '''
+    return render_template(
+        'index.html', 
+        #checkout_session_id=session['id'], 
+        #checkout_public_key=app.config['STRIPE_PUBLIC_KEY']
+    )
+
+
+@app.route('/stripe_pay')
+def stripe_pay():
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price': 'price_1Oo3eBSHX5mJdelNE81b4tu5',
+            'quantity': 1,
+        }],
+        mode='payment',
+        success_url=url_for('thanks', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url=url_for('index', _external=True),
+    )
+    return {
+        'checkout_session_id': session['id'], 
+        'checkout_public_key': app.config['STRIPE_PUBLIC_KEY']
+    }
+
+@app.route('/thanks')
+def thanks():
+    return render_template('thanks.html')
+
+@app.route('/stripe_webhook', methods=['POST'])
+def stripe_webhook():
+    print('WEBHOOK CALLED')
+
+    if request.content_length > 1024 * 1024:
+        print('REQUEST TOO BIG')
+        abort(400)
+    payload = request.get_data()
+    sig_header = request.environ.get('HTTP_STRIPE_SIGNATURE')
+    endpoint_secret = 'YOUR_ENDPOINT_SECRET'
+    event = None
+
     try:
-        data = request.get_json()
-        items = data['items']
-        total = data['total']
-
-        # Create a payment intent with Stripe
-        payment_intent = stripe.PaymentIntent.create(
-            amount=int(total * 100),  # Amount in cents
-            currency='usd',
-            metadata={'integration_check': 'accept_a_payment'}
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
         )
+    except ValueError as e:
+        # Invalid payload
+        print('INVALID PAYLOAD')
+        return {}, 400
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        print('INVALID SIGNATURE')
+        return {}, 400
 
-        return jsonify({'client_secret': payment_intent.client_secret}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    # Handle the checkout.session.completed event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        print(session)
+        line_items = stripe.checkout.Session.list_line_items(session['id'], limit=1)
+        print(line_items['data'][0]['description'])
 
+    return {}
+
+#remaining code 
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -90,8 +145,10 @@ def about():
 def contact():
     return render_template('contact.html')
 
+
 @app.route("/cart.html")
 def cart():
+    
     return render_template('cart.html')
 
 @app.route("/thankyou.html")

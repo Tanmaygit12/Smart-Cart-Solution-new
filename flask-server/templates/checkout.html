@@ -28,9 +28,14 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        items: YOUR_ITEMS_DATA,  // Replace with your cart items data
-                        total: YOUR_TOTAL_AMOUNT  // Replace with your total amount
+                        items: [
+                            { name: 'Product 1', quantity: 2, price: 10.99 },
+                            { name: 'Product 2', quantity: 1, price: 5.99 },
+                            // Add more items as needed
+                        ],
+                        total: 27.97  // Calculate your total amount dynamically based on the items
                     })
+                    
                 });
 
                 let data = await response.json();

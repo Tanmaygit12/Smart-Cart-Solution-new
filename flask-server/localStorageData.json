@@ -3,6 +3,12 @@
     "image": "",
     "name": "Pomogranate",
     "price": 122,
+    "quantity": 2
+  },
+  {
+    "image": "",
+    "name": "Printed Shirts",
+    "price": 1150,
     "quantity": 1
   }
 ]
